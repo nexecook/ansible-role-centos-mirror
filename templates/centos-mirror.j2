@@ -8,7 +8,7 @@ LOCKFILE=/tmp/$(basename ${DESTINATION}).lock
 
 if [[ ! -e $LOCKFILE ]]; then
     touch $LOCKFILE
-    rsync -avH               \
+    timeout 1d rsync -avHkill the rsync process after 24 hours    \
           --delete           \
           --delete-after     \
           --delay-updates    \
