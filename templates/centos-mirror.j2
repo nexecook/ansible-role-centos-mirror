@@ -2,13 +2,14 @@
 # http://www.centos.org/modules/tinycontent/index.php?id=22
 set -e
 
-SOURCE='{{ centos_mirror_source }}'
-DESTINATION='{{ mirror_doc_root }}/CentOS/'
+source='{{ centos_mirror_source }}'
+destination='{{ mirror_doc_root }}/CentOS/'
 
-LOCKFILE=/tmp/$(basename ${DESTINATION}).lock
+lockfile=/tmp/$(basename "${destination}").lock
 
-if [[ ! -e $LOCKFILE ]]; then
-    touch $LOCKFILE
+if mkdir "$lockfile" 2>/dev/null; then
+    trap 'rm -rf "$lockfile"' EXIT
+
     timeout 1d rsync -avH    \
           --delay-updates    \
           --exclude '.~tmp~' \
@@ -18,7 +19,7 @@ if [[ ! -e $LOCKFILE ]]; then
           --safe-links       \
           --itemize-changes  \
           --exclude 'repodata/*' \
-          ${SOURCE} ${DESTINATION}
+          "${source}" "${destination}"
 
     timeout 1d rsync -avH    \
           --delete           \
@@ -31,17 +32,14 @@ if [[ ! -e $LOCKFILE ]]; then
           --safe-links       \
           --itemize-changes  \
           --timeout=10800    \
-          ${SOURCE} ${DESTINATION}
+          "${source}" "${destination}"
 
-    if [[ $? -eq 0 ]]; then
-        echo `date +%s` > {{ mirror_timestamp_dir }}/centos
-    fi
+    date +%s > {{ mirror_timestamp_dir }}/centos
 
-    rm $LOCKFILE
 else
     cat <<EOF 1>&2
 ERROR: Another rsync is already running and has the lock file
-$LOCKFILE.
+$lockfile.
 EOF
 
 fi
